@@ -450,7 +450,7 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
                       },
                     ),
                   ),
-                )).toList(),
+                )),
 
               const SizedBox(height: 40),
             ],
