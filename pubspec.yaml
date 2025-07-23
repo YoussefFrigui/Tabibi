@@ -1,0 +1,54 @@
+name: tabibi_1
+description: "Tabibi - Medical Appointment Management System. A comprehensive Flutter app connecting patients with doctors through smart booking and calendar management."
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase dependencies
+  firebase_core: ^3.15.1
+  firebase_auth: ^5.6.2
+  cloud_firestore: ^5.6.11
+  firebase_storage: ^12.4.9
+  firebase_messaging: ^15.2.9
+  
+  # UI and State Management
+  provider: ^6.1.5
+  
+  # Local notifications
+  flutter_local_notifications: ^17.2.3
+  
+  # Location services
+  geolocator: ^12.0.0
+  geocoding: ^3.0.0
+  
+  # Utilities
+  intl: ^0.20.2
+  http: ^1.2.0
+  image_picker: ^1.0.4
+  uuid: ^4.4.0
+  
+  # URL launcher
+  url_launcher: ^6.3.0
+  
+  # Permission handler
+  permission_handler: ^11.3.0
+  
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+      - assets/
+  generate: true
