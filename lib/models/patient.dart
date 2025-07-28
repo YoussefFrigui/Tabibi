@@ -12,6 +12,8 @@ class Patient {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
+  // add string list for favorite doctors
+  final List<String> favoriteDoctors;
 
   const Patient({
     required this.uid,
@@ -25,6 +27,7 @@ class Patient {
     required this.createdAt,
     required this.updatedAt,
     required this.isActive,
+    this.favoriteDoctors = const [],
   });
 
   // Create Patient from Firestore document
@@ -42,6 +45,7 @@ class Patient {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isActive: data['isActive'] ?? true,
+      favoriteDoctors: List<String>.from(data['favoriteDoctors'] ?? []),
     );
   }
 
@@ -59,6 +63,7 @@ class Patient {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isActive: data['isActive'] ?? true,
+      favoriteDoctors: List<String>.from(data['favoriteDoctors'] ?? []),
     );
   }
 
@@ -77,6 +82,7 @@ class Patient {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isActive': isActive,
+      'favoriteDoctors': favoriteDoctors,
     };
   }
 
@@ -93,6 +99,7 @@ class Patient {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    List<String>? favoriteDoctors,
   }) {
     return Patient(
       uid: uid ?? this.uid,
@@ -106,6 +113,7 @@ class Patient {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
+      favoriteDoctors: favoriteDoctors ?? this.favoriteDoctors,
     );
   }
 

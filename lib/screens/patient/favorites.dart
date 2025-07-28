@@ -30,12 +30,25 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
 
     try {
-      // For now, load all doctors as favorites since Patient model doesn't have favoriteDoctors field
-      // This can be extended later when the Patient model is updated to include favorites
-      final doctors = await _userService.getAllDoctors();
-      
+      // Get current patient (assuming you have a method to get current user)
+      final patient = await _userService.getCurrentPatient();
+      if (patient == null || patient.favoriteDoctors.isEmpty) {
+        setState(() {
+          favoriteDoctors = [];
+        });
+        return;
+      }
+      // Fetch doctor details for each favorite doctor ID
+      List<Doctor> doctors;
+      if (_userService.getDoctorsByIds != null) {
+        doctors = await _userService.getDoctorsByIds(patient.favoriteDoctors);
+      } else {
+        // fallback: filter from all doctors
+        final allDoctors = await _userService.getAllDoctors();
+        doctors = allDoctors.where((d) => patient.favoriteDoctors.contains(d.uid)).toList();
+      }
       setState(() {
-        favoriteDoctors = doctors.take(4).toList(); // Show first 4 as favorites for demo
+        favoriteDoctors = doctors;
       });
     } catch (e) {
       setState(() {
@@ -49,20 +62,46 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
-  void _removeFavorite(int index) {
+  Future<void> _removeFavorite(int index) async {
+    final doctor = favoriteDoctors[index];
     setState(() {
-      favoriteDoctors.removeAt(index);
+      isLoading = true;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('❌ Removed from Favorites')),
-    );
+    try {
+      // Remove from backend (assumes you have a method for this)
+      if (_userService.removeFavoriteDoctor != null) {
+        await _userService.removeFavoriteDoctor(doctor.uid);
+      } else {
+        // fallback: update patient model and backend manually
+        final patient = await _userService.getCurrentPatient();
+        if (patient != null) {
+          final updatedFavorites = List<String>.from(patient.favoriteDoctors);
+          updatedFavorites.remove(doctor.uid);
+          await _userService.updatePatientFavorites(updatedFavorites);
+        }
+      }
+      setState(() {
+        favoriteDoctors.removeAt(index);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('❌ Removed from Favorites')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error removing favorite: $e')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _openDoctorProfile(BuildContext context, Doctor doctor) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DoctorProfileScreen(doctor: doctor),
+        builder: (context) => DoctorProfileScreen(doctor: doctor), // If the parameter is not 'doctor', change to the correct one
       ),
     );
   }

@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/models.dart';
@@ -5,6 +6,38 @@ import '../models/models.dart';
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final auth.FirebaseAuth _auth = auth.FirebaseAuth.instance;
+
+  // Get multiple doctors by a list of IDs
+  Future<List<Doctor>> getDoctorsByIds(List<String> doctorIds) async {
+    if (doctorIds.isEmpty) return [];
+    try {
+      final List<Future<Doctor?>> futures = doctorIds.map((id) => getDoctorById(id)).toList();
+      final doctors = await Future.wait(futures);
+      return doctors.whereType<Doctor>().toList();
+    } catch (e) {
+      print('Error getting doctors by IDs: $e');
+      return [];
+    }
+  }
+
+  // Remove a doctor from the current patient's favorites
+  Future<void> removeFavoriteDoctor(String doctorId) async {
+    final patient = await getCurrentPatient();
+    if (patient == null) return;
+    final updatedFavorites = List<String>.from(patient.favoriteDoctors);
+    updatedFavorites.remove(doctorId);
+    await updatePatientFavorites(updatedFavorites);
+  }
+
+  // Update the current patient's favoriteDoctors list
+  Future<void> updatePatientFavorites(List<String> favoriteDoctors) async {
+    final patient = await getCurrentPatient();
+    if (patient == null) return;
+    await _firestore.collection('users').doc(patient.uid).update({
+      'favoriteDoctors': favoriteDoctors,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
 
   // Get current user as User model
   Future<User?> getCurrentUser() async {

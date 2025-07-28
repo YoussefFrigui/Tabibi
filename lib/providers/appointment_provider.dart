@@ -161,7 +161,20 @@ class AppointmentProvider with ChangeNotifier {
   }
 
   Future<bool> confirmAppointment(String appointmentId) async {
-    return await _appointmentService.confirmAppointment(appointmentId);
+    try {
+      _setLoading(true);
+      _clearError();
+      final success = await _appointmentService.confirmAppointment(appointmentId);
+      if (success) {
+        await loadCurrentUserAppointments(); // Refresh appointments
+      }
+      return success;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> completeAppointment(String appointmentId) async {

@@ -93,7 +93,7 @@ class AppConstants {
   static const String themeKey = 'theme';
   
   // Supported languages
-  static const List<String> supportedLanguages = ['en', 'fr', 'ar'];
+  static const List<String> supportedLanguages = ['en','ar'];
   static const String defaultLanguage = 'en';
   
   // Map configuration

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/models.dart';
+import 'doctor_availability_service.dart';
 
 class AppointmentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -223,10 +224,38 @@ class AppointmentService {
   // Confirm appointment (doctor only)
   Future<bool> confirmAppointment(String appointmentId) async {
     try {
+      // 1. Update appointment status
       await _firestore.collection('appointments').doc(appointmentId).update({
         'status': AppointmentStatus.confirmed.name,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // 2. Fetch appointment details
+      final doc = await _firestore.collection('appointments').doc(appointmentId).get();
+      if (!doc.exists) {
+        print('Error: appointment not found after confirming');
+        return false;
+      }
+      final data = doc.data() as Map<String, dynamic>;
+      final String doctorId = data['doctorId'];
+      final String appointmentDate = data['appointmentDate'];
+      final String appointmentTime = data['appointmentTime'];
+
+      // 3. Mark the slot as unavailable
+      final DoctorAvailabilityService _availabilityService = DoctorAvailabilityService();
+      // Get current availability for the date
+      final Map<String, bool> slots = await _availabilityService.getAvailability(
+        doctorId: doctorId,
+        date: appointmentDate,
+      );
+      // Mark the slot as unavailable (false)
+      slots[appointmentTime] = false;
+      await _availabilityService.saveAvailability(
+        doctorId: doctorId,
+        date: appointmentDate,
+        timeSlots: slots,
+      );
+
       return true;
     } catch (e) {
       print('Error confirming appointment: $e');

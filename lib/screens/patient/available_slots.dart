@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/models.dart';
-import '../../providers/providers.dart';
 import '../../services/appointment_service.dart';
 import '../../services/doctor_availability_service.dart';
+import '../../providers/appointment_provider.dart';
 
 class CheckAppointmentPage extends StatefulWidget {
   final Doctor doctor;
