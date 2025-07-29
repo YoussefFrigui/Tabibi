@@ -1,3 +1,5 @@
+# Ignore Firestore security rules
+firestore.rules
 # Ignore all markdown files except README.md
 *.md
 !README.md
