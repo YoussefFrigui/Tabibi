@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 
+
 class DoctorProfileFormPage extends StatefulWidget {
-  const DoctorProfileFormPage({super.key});
+  final String? userId;
+  final String? email;
+  const DoctorProfileFormPage({Key? key, this.userId, this.email}) : super(key: key);
 
   @override
   State<DoctorProfileFormPage> createState() => _DoctorProfileFormPageState();
@@ -16,6 +19,13 @@ class _DoctorProfileFormPageState extends State<DoctorProfileFormPage> {
   final TextEditingController clinicController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    if (widget.email != null && widget.email!.isNotEmpty) {
+      emailController.text = widget.email!;
+    }
+  }
 
   String? selectedSpecialty;
   DateTime? availabilityDateTime;

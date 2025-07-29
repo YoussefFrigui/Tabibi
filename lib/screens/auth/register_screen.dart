@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:tabibi_1/screens/shared/doctor_profile_form.dart';
 import '../../constants/app_colors.dart';
+import '../../services/auth_service.dart';
+import '../doctor/doctor_profile_update.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -166,7 +169,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        if (selectedRole == 'Doctor') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DoctorProfileFormPage(),
+                            ),
+                          );
+                        } else {
+                          // Validate form fields
+                          if (nameController.text.isEmpty ||
+                              firstNameController.text.isEmpty ||
+                              emailController.text.isEmpty ||
+                              passwordController.text.isEmpty ||
+                              confirmPasswordController.text.isEmpty ||
+                              selectedDay == null ||
+                              selectedMonth == null ||
+                              selectedYear == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please fill all fields.')),
+                            );
+                            return;
+                          }
+                          if (passwordController.text != confirmPasswordController.text) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Passwords do not match.')),
+                            );
+                            return;
+                          }
+                          // Register patient
+                          final authService = AuthService();
+                          final result = await authService.registerWithEmailAndPassword(
+                            emailController.text.trim(),
+                            passwordController.text.trim(),
+                            '${nameController.text.trim()} ${firstNameController.text.trim()}',
+                            'patient',
+                          );
+                          if (result['success'] == true) {
+                            // Optionally update patient date of birth
+                            await authService.updateUserProfile({
+                              'dateOfBirth': '${selectedYear!}-${selectedMonth!.padLeft(2, '0')}-${selectedDay!.padLeft(2, '0')}',
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Registration successful!')),
+                            );
+                            Navigator.pop(context);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(result['error'] ?? 'Registration failed.')),
+                            );
+                          }
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,

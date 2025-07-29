@@ -82,7 +82,7 @@ class _MyAppState extends State<MyApp> {
           AppRoutes.register: (context) => const RegisterScreen(),
           AppRoutes.patientDashboard: (context) => const SearchDoctorsScreen(),
           AppRoutes.doctorDashboard: (context) => const DoctorDashboard(),
-         // AppRoutes.adminDashboard: (context) => const AdminDashboard(),
+          // AppRoutes.adminDashboard: (context) => const AdminDashboard(),
           AppRoutes.databaseInitializer: (context) => const DatabaseInitializerScreen(),
         },
       ),
