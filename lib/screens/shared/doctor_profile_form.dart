@@ -11,7 +11,7 @@ class DoctorProfileFormPage extends StatefulWidget {
   final String? email;
   final String? password;
   final String? fullName;
-  const DoctorProfileFormPage({Key? key, this.userId, this.email, this.password, this.fullName}) : super(key: key);
+  const DoctorProfileFormPage({super.key, this.userId, this.email, this.password, this.fullName});
 
   @override
   State<DoctorProfileFormPage> createState() => _DoctorProfileFormPageState();

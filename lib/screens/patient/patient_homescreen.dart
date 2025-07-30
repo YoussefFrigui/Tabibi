@@ -9,7 +9,6 @@ import '../auth/login_screen.dart';
 import 'patient_profile_update.dart';
 import 'patient_calendar.dart';
 import 'favorites.dart';
-import 'write_review.dart';
 
 class SearchDoctorsScreen extends StatefulWidget {
   const SearchDoctorsScreen({super.key});
@@ -552,146 +551,154 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final int selectedIndex = 0;
+
+    final List<Map<String, dynamic>> drawerItems = [
+      {'icon': Icons.home_outlined, 'label': 'Home', 'page': null},
+      {'icon': Icons.person_outline, 'label': 'Profile', 'page': const UpdatePatientProfilePage()},
+      {'icon': Icons.event_available_outlined, 'label': 'My Calendar', 'page': const PatientViewCalendarScreen()},
+      {'icon': Icons.favorite_border, 'label': 'Favorites', 'page': const FavoritesScreen()},
+      {'icon': Icons.refresh, 'label': 'Refresh', 'page': null},
+      {'icon': Icons.settings_outlined, 'label': 'Settings', 'page': null},
+    ];
+
     return Drawer(
-      width: 200,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withOpacity(0.9),
+              AppColors.primary.withOpacity(0.95)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(48),
+            bottomLeft: Radius.circular(48),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          // HEADER
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius:
-                  const BorderRadius.only(topRight: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Consumer<UserProvider>(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 30),
+        child: Column(
+          children: [
+            // ✅ Avatar utilisateur
+            Consumer<UserProvider>(
               builder: (context, userProvider, child) {
                 final patient = userProvider.currentPatient;
-                return Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      child: patient?.profilePicture != null && patient!.profilePicture.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(26),
-                              child: Image.network(
-                                patient.profilePicture,
-                                width: 52,
-                                height: 52,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(Icons.person, color: Colors.white, size: 30);
-                                },
-                              ),
-                            )
-                          : Icon(Icons.person, color: Colors.white, size: 30),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        patient?.displayName ?? 'Patient',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                return CircleAvatar(
+                  radius: 26,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  child: patient?.profilePicture != null && patient!.profilePicture.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(26),
+                          child: patient.profilePicture.startsWith('http')
+                              ? Image.network(
+                                  patient.profilePicture,
+                                  width: 52,
+                                  height: 52,
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.asset(
+                                  patient.profilePicture,
+                                  width: 52,
+                                  height: 52,
+                                  fit: BoxFit.cover,
+                                ),
+                        )
+                      : const Icon(Icons.person, color: Colors.white, size: 30),
                 );
               },
             ),
-          ),
 
-          // MENU
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _drawerItem(Icons.home_outlined, 'Home', context, null),
-                _drawerItem(Icons.person_outline, 'Profile', context,
-                    const UpdatePatientProfilePage()),
-                _drawerItem(Icons.event_available_outlined, 'My Calendar',
-                    context, const PatientViewCalendarScreen()),
-                _drawerItem(Icons.favorite_border, 'Favorites', context,
-                    const FavoritesScreen()),
-                _drawerItem(Icons.settings_outlined, 'Settings', context, null),
-              ],
-            ),
-          ),
+            const SizedBox(height: 30),
 
-          // LOGOUT
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final userProvider = Provider.of<UserProvider>(context, listen: false);
-                await userProvider.signOut();
-                if (mounted) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+            // ✅ Liste des items
+            Expanded(
+              child: ListView.builder(
+                itemCount: drawerItems.length,
+                itemBuilder: (context, index) {
+                  final item = drawerItems[index];
+                  final bool isSelected = index == selectedIndex;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      horizontalTitleGap: 4,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                      leading: Icon(
+                        item['icon'],
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        size: 20,
+                      ),
+                      title: Text(
+                        item['label'],
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected ? AppColors.primary : Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (item['label'] == 'Refresh') {
+                          _loadData();
+                        } else if (item['page'] != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => item['page']),
+                          );
+                        }
+                      },
+                    ),
                   );
-                }
-              },
-              icon: const Icon(Icons.logout, size: 22),
-              label: const Text(
-                'Logout',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                elevation: 4,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
+                },
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 12),
+
+            // ✅ Bouton Logout
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final userProvider = Provider.of<UserProvider>(context, listen: false);
+                  await userProvider.signOut();
+                  if (context.mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.logout, size: 18),
+                label: const Text('Logout', style: TextStyle(fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
-  Widget _drawerItem(
-      IconData icon, String label, BuildContext context, Widget? destination, {VoidCallback? onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
-      title: Text(
-        label,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        if (onTap != null) {
-          onTap();
-        } else if (destination != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => destination),
-          );
-        }
-      },
-      dense: true,
-      horizontalTitleGap: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-    );
-  }
 }
 
 class FilterBottomSheet extends StatefulWidget {

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tabibi_1/screens/shared/doctor_profile_form.dart';
 import '../../constants/app_colors.dart';
 import '../../services/auth_service.dart';
-import '../doctor/doctor_profile_update.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

@@ -40,14 +40,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       }
       // Fetch doctor details for each favorite doctor ID
       List<Doctor> doctors;
-      if (_userService.getDoctorsByIds != null) {
-        doctors = await _userService.getDoctorsByIds(patient.favoriteDoctors);
-      } else {
-        // fallback: filter from all doctors
-        final allDoctors = await _userService.getAllDoctors();
-        doctors = allDoctors.where((d) => patient.favoriteDoctors.contains(d.uid)).toList();
-      }
-      setState(() {
+      doctors = await _userService.getDoctorsByIds(patient.favoriteDoctors);
+          setState(() {
         favoriteDoctors = doctors;
       });
     } catch (e) {
@@ -69,18 +63,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
     try {
       // Remove from backend (assumes you have a method for this)
-      if (_userService.removeFavoriteDoctor != null) {
-        await _userService.removeFavoriteDoctor(doctor.uid);
-      } else {
-        // fallback: update patient model and backend manually
-        final patient = await _userService.getCurrentPatient();
-        if (patient != null) {
-          final updatedFavorites = List<String>.from(patient.favoriteDoctors);
-          updatedFavorites.remove(doctor.uid);
-          await _userService.updatePatientFavorites(updatedFavorites);
-        }
-      }
-      setState(() {
+      await _userService.removeFavoriteDoctor(doctor.uid);
+          setState(() {
         favoriteDoctors.removeAt(index);
       });
       ScaffoldMessenger.of(context).showSnackBar(

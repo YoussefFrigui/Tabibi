@@ -242,15 +242,15 @@ class AppointmentService {
       final String appointmentTime = data['appointmentTime'];
 
       // 3. Mark the slot as unavailable
-      final DoctorAvailabilityService _availabilityService = DoctorAvailabilityService();
+      final DoctorAvailabilityService availabilityService = DoctorAvailabilityService();
       // Get current availability for the date
-      final Map<String, bool> slots = await _availabilityService.getAvailability(
+      final Map<String, bool> slots = await availabilityService.getAvailability(
         doctorId: doctorId,
         date: appointmentDate,
       );
       // Mark the slot as unavailable (false)
       slots[appointmentTime] = false;
-      await _availabilityService.saveAvailability(
+      await availabilityService.saveAvailability(
         doctorId: doctorId,
         date: appointmentDate,
         timeSlots: slots,

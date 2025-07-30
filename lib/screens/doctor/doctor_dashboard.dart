@@ -409,24 +409,52 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final List<Map<String, dynamic>> drawerItems = [
+      {
+        'icon': Icons.home_outlined,
+        'label': 'Home',
+        'page': const DoctorDashboard(),
+      },
+      {
+        'icon': Icons.person_outline,
+        'label': 'Profile',
+        'page': const UpdateDoctorProfilePage(),
+      },
+      {
+        'icon': Icons.calendar_today_outlined,
+        'label': 'My Calendar',
+        'page': const DoctorManageCalendarScreen(),
+      },
+      {
+        'icon': Icons.check_circle_outline,
+        'label': 'Confirm Appointments',
+        'page': const ConfirmAppointmentsScreen(),
+      },
+    ];
+
     return Drawer(
-      width: 220,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 200,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withOpacity(0.9),
+              AppColors.primary.withOpacity(0.95)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(48),
+            bottomRight: Radius.circular(48),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius:
-                  const BorderRadius.only(topRight: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Row(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 30),
+        child: Column(
+          children: [
+            // ✅ En-tête avec avatar
+            Row(
               children: [
                 const CircleAvatar(
                   radius: 26,
@@ -439,82 +467,88 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _drawerItem(Icons.home_outlined, 'Home', context,
-                    const DoctorDashboard()),
-                _drawerItem(Icons.person_outline, 'Profile', context,
-                    const UpdateDoctorProfilePage()),
-                _drawerItem(Icons.calendar_today_outlined, 'My Calendar',
-                    context, const DoctorManageCalendarScreen()),
-                _drawerItem(Icons.check_circle_outline, 'Confirm Appointments',
-                    context, const ConfirmAppointmentsScreen()),
-              ],
+            const SizedBox(height: 30),
+            // ✅ Liste des items
+            Expanded(
+              child: ListView.builder(
+                itemCount: drawerItems.length,
+                itemBuilder: (context, index) {
+                  final item = drawerItems[index];
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      horizontalTitleGap: 8,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      leading: Icon(
+                        item['icon'],
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                      title: Text(
+                        item['label'],
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => item['page']),
+                        );
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-              icon: const Icon(Icons.logout, size: 22),
-              label: const Text(
-                'Logout',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            const SizedBox(height: 12),
+            // ✅ Bouton Logout stylé
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                icon: const Icon(Icons.logout, size: 20),
+                label: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 2,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(52),
-                elevation: 4,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-              ),
-            ),
-          ),
-        ],
+            )
+          ],
+        ),
       ),
     );
   }
 
-  Widget _drawerItem(
-      IconData icon, String label, BuildContext context, Widget destination) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 24),
-      title: Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => destination),
-        );
-      },
-      dense: true,
-      horizontalTitleGap: 12,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    );
-  }
 }

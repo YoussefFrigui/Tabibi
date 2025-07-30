@@ -266,7 +266,7 @@ class _PatientViewCalendarScreenState extends State<PatientViewCalendarScreen> {
                     builder: (context, userProvider, _) {
                       final patientName = userProvider.currentPatient?.displayName ?? '';
                       return Text(
-                        '${patientName.isNotEmpty ? patientName + "'s " : ''}Calendar',
+                        '${patientName.isNotEmpty ? "$patientName's " : ''}Calendar',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
