@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/user_provider.dart';
 import 'confirm_appointments.dart';
 import 'doctor_profile_update.dart';
 import 'manage_calendar.dart';
@@ -409,139 +411,168 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final int selectedIndex = 0;
+
     final List<Map<String, dynamic>> drawerItems = [
-      {
-        'icon': Icons.home_outlined,
-        'label': 'Home',
-        'page': const DoctorDashboard(),
-      },
-      {
-        'icon': Icons.person_outline,
-        'label': 'Profile',
-        'page': const UpdateDoctorProfilePage(),
-      },
-      {
-        'icon': Icons.calendar_today_outlined,
-        'label': 'My Calendar',
-        'page': const DoctorManageCalendarScreen(),
-      },
-      {
-        'icon': Icons.check_circle_outline,
-        'label': 'Confirm Appointments',
-        'page': const ConfirmAppointmentsScreen(),
-      },
+      {'icon': Icons.home_outlined, 'label': 'Home', 'page': const DoctorDashboard()},
+      {'icon': Icons.person_outline, 'label': 'Profile', 'page': const UpdateDoctorProfilePage()},
+      {'icon': Icons.event_available_outlined, 'label': 'My Calendar', 'page': const DoctorManageCalendarScreen()},
+      {'icon': Icons.check_circle_outline, 'label': 'Confirm Appointments', 'page': const ConfirmAppointmentsScreen()},
+      {'icon': Icons.refresh, 'label': 'Refresh', 'page': null},
+      {'icon': Icons.settings_outlined, 'label': 'Settings', 'page': null},
     ];
 
+    final double drawerWidth = MediaQuery.of(context).size.width * 0.6;
     return Drawer(
       backgroundColor: Colors.transparent,
+      width: drawerWidth,
       child: Container(
-        width: 200,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
               AppColors.primary.withOpacity(0.9),
-              AppColors.primary.withOpacity(0.95)
+              AppColors.primary.withOpacity(0.95),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(48),
-            bottomRight: Radius.circular(48),
+            topLeft: Radius.circular(48),
+            bottomLeft: Radius.circular(48),
+            topRight: Radius.circular(0),
+            bottomRight: Radius.circular(0),
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 30),
         child: Column(
           children: [
-            // ✅ En-tête avec avatar
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 26,
-                  backgroundImage: AssetImage('assets/1.jpg'),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Doctor',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+            // ✅ Avatar utilisateur
+            Consumer<UserProvider>(
+              builder: (context, userProvider, child) {
+                final doctor = userProvider.currentDoctor;
+                return Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      child: doctor?.profilePicture != null && doctor!.profilePicture.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(26),
+                              child: doctor.profilePicture.startsWith('http')
+                                  ? Image.network(
+                                      doctor.profilePicture,
+                                      width: 52,
+                                      height: 52,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.asset(
+                                      doctor.profilePicture,
+                                      width: 52,
+                                      height: 52,
+                                      fit: BoxFit.cover,
+                                    ),
+                            )
+                          : const Icon(Icons.person, color: Colors.white, size: 30),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+                    const SizedBox(height: 8),
+                    Text(
+                      doctor != null && doctor.displayName.isNotEmpty
+                          ? (doctor.displayName.trim().toLowerCase().startsWith('dr.')
+                              ? doctor.displayName.trim()
+                              : 'Dr. ${doctor.displayName.trim()}')
+                          : 'Dr. ',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                );
+              },
             ),
+
             const SizedBox(height: 30),
+
             // ✅ Liste des items
             Expanded(
               child: ListView.builder(
                 itemCount: drawerItems.length,
                 itemBuilder: (context, index) {
                   final item = drawerItems[index];
+                  final bool isSelected = index == selectedIndex;
 
                   return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: const Duration(milliseconds: 250),
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: isSelected ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(32),
                     ),
                     child: ListTile(
                       dense: true,
-                      horizontalTitleGap: 8,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      horizontalTitleGap: 4,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                       leading: Icon(
                         item['icon'],
-                        color: Colors.white,
-                        size: 22,
+                        color: isSelected ? AppColors.primary : Colors.white,
+                        size: 20,
                       ),
                       title: Text(
                         item['label'],
-                        style: const TextStyle(
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: isSelected ? AppColors.primary : Colors.white,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => item['page']),
-                        );
+                        if (item['label'] == 'Refresh') {
+                          _loadDashboardData();
+                        } else if (item['page'] != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => item['page']),
+                          );
+                        }
                       },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
                     ),
                   );
                 },
               ),
             ),
+
             const SizedBox(height: 12),
-            // ✅ Bouton Logout stylé
+
+            // ✅ Bouton Logout
             Padding(
               padding: const EdgeInsets.all(8),
               child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
+                onPressed: () async {
+                  final userProvider = Provider.of<UserProvider>(context, listen: false);
+                  await userProvider.signOut();
+                  if (context.mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.logout, size: 20),
-                label: const Text('Logout'),
+                icon: const Icon(Icons.logout, size: 18),
+                label: const Text('Logout', style: TextStyle(fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.primary,
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: const Size.fromHeight(44),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   elevation: 2,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               ),
             )
@@ -551,4 +582,5 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     );
   }
 
+  // _drawerItem method removed as it is no longer used
 }
