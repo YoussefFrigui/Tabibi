@@ -12,8 +12,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final nameController = TextEditingController();
-  final firstNameController = TextEditingController();
+  final firstnameController = TextEditingController();
+  final laststNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -60,16 +60,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Expanded(
                         child: _inputField(
-                          controller: nameController,
-                          hint: 'Name',
+                          controller: firstnameController,
+                          hint: 'First Name',
                           icon: Icons.person_outline,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _inputField(
-                          controller: firstNameController,
-                          hint: 'First Name',
+                          controller: laststNameController,
+                          hint: 'Last Name',
                           icon: Icons.person_outline,
                         ),
                       ),
@@ -171,16 +171,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: ElevatedButton(
                       onPressed: () async {
                         if (selectedRole == 'Doctor') {
+                          // Validate required fields for doctor registration (at least email, password, name)
+                          if (firstnameController.text.isEmpty ||
+                              laststNameController.text.isEmpty ||
+                              emailController.text.isEmpty ||
+                              passwordController.text.isEmpty ||
+                              confirmPasswordController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please fill all fields.')),
+                            );
+                            return;
+                          }
+                          if (passwordController.text != confirmPasswordController.text) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Passwords do not match.')),
+                            );
+                            return;
+                          }
+                          // Pass full name to doctor profile form
+                          final fullName = '${firstnameController.text.trim()} ${laststNameController.text.trim()}';
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const DoctorProfileFormPage(),
+                              builder: (context) => DoctorProfileFormPage(
+                                email: emailController.text.trim(),
+                                password: passwordController.text.trim(),
+                                fullName: fullName,
+                              ),
                             ),
                           );
                         } else {
                           // Validate form fields
-                          if (nameController.text.isEmpty ||
-                              firstNameController.text.isEmpty ||
+                          if (firstnameController.text.isEmpty ||
+                              laststNameController.text.isEmpty ||
                               emailController.text.isEmpty ||
                               passwordController.text.isEmpty ||
                               confirmPasswordController.text.isEmpty ||
@@ -203,7 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           final result = await authService.registerWithEmailAndPassword(
                             emailController.text.trim(),
                             passwordController.text.trim(),
-                            '${nameController.text.trim()} ${firstNameController.text.trim()}',
+                            '${firstnameController.text.trim()} ${laststNameController.text.trim()}',
                             'patient',
                           );
                           if (result['success'] == true) {

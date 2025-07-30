@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+
 import '../../constants/app_colors.dart';
+
+import '../../services/auth_service.dart';
+import '../doctor/doctor_dashboard.dart';
 
 
 class DoctorProfileFormPage extends StatefulWidget {
   final String? userId;
   final String? email;
-  const DoctorProfileFormPage({Key? key, this.userId, this.email}) : super(key: key);
+  final String? password;
+  final String? fullName;
+  const DoctorProfileFormPage({Key? key, this.userId, this.email, this.password, this.fullName}) : super(key: key);
 
   @override
   State<DoctorProfileFormPage> createState() => _DoctorProfileFormPageState();
@@ -24,6 +30,9 @@ class _DoctorProfileFormPageState extends State<DoctorProfileFormPage> {
     super.initState();
     if (widget.email != null && widget.email!.isNotEmpty) {
       emailController.text = widget.email!;
+    }
+    if (widget.fullName != null && widget.fullName!.isNotEmpty) {
+      fullNameController.text = widget.fullName!;
     }
   }
 
@@ -96,12 +105,60 @@ class _DoctorProfileFormPageState extends State<DoctorProfileFormPage> {
     return availabilityDateTime!.toLocal().toString().substring(0, 16);
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Profile saved successfully')),
-      );
-      // Save to database here
+      // Register doctor and log in
+      final email = emailController.text.trim();
+      final password = widget.password ?? '';
+      final fullName = fullNameController.text.trim();
+      final specialty = selectedSpecialty;
+      final experience = experienceController.text.trim();
+      final clinic = clinicController.text.trim();
+      final phone = phoneController.text.trim();
+
+      // TODO: Get password from previous screen or require it here for real registration
+      if (password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password is required for registration.')),
+        );
+        return;
+      }
+
+      try {
+        // Register doctor
+        final authService = AuthService();
+        final result = await authService.registerWithEmailAndPassword(
+          email,
+          password,
+          fullName,
+          'doctor',
+        );
+        if (result['success'] == true) {
+          // Save doctor profile details (extend as needed)
+          await authService.updateUserProfile({
+            'specialty': specialty,
+            'experience': experience,
+            'clinic': clinic,
+            'phone': phone,
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Profile saved successfully')),
+          );
+          // Navigate to doctor dashboard, logged in as the new doctor
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => DoctorDashboard()),
+            (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['error'] ?? 'Registration failed.')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
   }
 

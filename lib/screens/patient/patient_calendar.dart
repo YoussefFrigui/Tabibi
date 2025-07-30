@@ -21,7 +21,9 @@ class _PatientViewCalendarScreenState extends State<PatientViewCalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAppointments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadAppointments();
+    });
   }
 
   Future<void> _loadAppointments() async {
@@ -260,13 +262,18 @@ class _PatientViewCalendarScreenState extends State<PatientViewCalendarScreen> {
                     splashRadius: 24,
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Doctor Calendar',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Consumer<UserProvider>(
+                    builder: (context, userProvider, _) {
+                      final patientName = userProvider.currentPatient?.displayName ?? '';
+                      return Text(
+                        '${patientName.isNotEmpty ? patientName + "'s " : ''}Calendar',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

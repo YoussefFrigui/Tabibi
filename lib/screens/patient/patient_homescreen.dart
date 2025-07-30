@@ -25,6 +25,7 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
   bool isLoading = true;
   List<Doctor> allDoctors = [];
   List<Doctor> filteredDoctors = [];
+  String? selectedCategory;
   
   List<String> specialties = [
     'Cardiology',
@@ -113,10 +114,37 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
 
   void _filterBySpecialty(String specialty) {
     setState(() {
-      filteredDoctors = allDoctors.where((doctor) {
-        return doctor.specialty.toLowerCase() == specialty.toLowerCase();
-      }).toList();
+      if (selectedCategory == specialty) {
+        // If already selected, reset filter
+        selectedCategory = null;
+        filteredDoctors = allDoctors;
+      } else {
+        selectedCategory = specialty;
+        filteredDoctors = allDoctors.where((doctor) {
+          return doctor.specialty.toLowerCase() == specialty.toLowerCase();
+        }).toList();
+      }
     });
+  }
+
+  // Reload all doctors from Firestore to update ratings after review
+  Future<void> _reloadDoctors() async {
+    try {
+      final doctors = await _userService.getAllDoctors();
+      if (mounted) {
+        setState(() {
+          allDoctors = doctors;
+          // Re-apply current filter if any
+          if (selectedCategory != null) {
+            filteredDoctors = allDoctors.where((doctor) => doctor.specialty.toLowerCase() == selectedCategory!.toLowerCase()).toList();
+          } else {
+            filteredDoctors = allDoctors;
+          }
+        });
+      }
+    } catch (e) {
+      // Optionally show error
+    }
   }
 
   @override
@@ -431,22 +459,26 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
                       ),
                       trailing: IconButton(
                         icon: Icon(Icons.arrow_forward_ios, color: AppColors.primary),
-                        onPressed: () {
-                          Navigator.push(
+                        onPressed: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => DoctorProfileScreen(doctor: doctor),
                             ),
                           );
+                          // Reload all doctors after returning to update ratings
+                          await _reloadDoctors();
                         },
                       ),
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => DoctorProfileScreen(doctor: doctor),
                           ),
                         );
+                        // Reload all doctors after returning to update ratings
+                        await _reloadDoctors();
                       },
                     ),
                   ),
@@ -461,13 +493,14 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
   }
 
   Widget _categoryCard(String title, String imagePath, String specialty) {
+    final isSelected = selectedCategory == specialty;
     return GestureDetector(
       onTap: () => _filterBySpecialty(specialty),
       child: Container(
         width: 140,
         height: 100,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? AppColors.primary.withOpacity(0.12) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -476,6 +509,7 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
               offset: const Offset(0, 4),
             )
           ],
+          border: isSelected ? Border.all(color: AppColors.primary, width: 2) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -506,7 +540,7 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
               child: Text(
                 title,
                 style: TextStyle(
-                  color: AppColors.primary,
+                  color: isSelected ? AppColors.primary : AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -589,9 +623,6 @@ class _SearchDoctorsScreenState extends State<SearchDoctorsScreen> {
                     context, const PatientViewCalendarScreen()),
                 _drawerItem(Icons.favorite_border, 'Favorites', context,
                     const FavoritesScreen()),
-                _drawerItem(Icons.rate_review_outlined, 'Write Reviews',
-                    context, const WriteReviewsScreen()),
-                _drawerItem(Icons.refresh, 'Refresh', context, null, onTap: _loadData),
                 _drawerItem(Icons.settings_outlined, 'Settings', context, null),
               ],
             ),
@@ -789,22 +820,47 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
             const SizedBox(height: 24),
 
-            // Apply Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.check),
-                label: const Text('Apply Filters'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 3,
+            // Apply & Reset Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Apply Filters'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      elevation: 3,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        selectedSpecialty = null;
+                        selectedFacilityType = null;
+                        rating = 3;
+                        startTime = null;
+                        endTime = null;
+                      });
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reset Filters'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+              ],
             )
           ],
         ),

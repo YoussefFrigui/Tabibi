@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:tabibi_1/constants/app_colors.dart';
+
 import 'package:tabibi_1/models/models.dart';
 import 'package:tabibi_1/screens/patient/available_slots.dart';
+import 'package:provider/provider.dart';
+import 'package:tabibi_1/providers/providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 class DoctorProfileScreen extends StatefulWidget {
@@ -12,22 +16,82 @@ class DoctorProfileScreen extends StatefulWidget {
   State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
 }
 
+
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   double _currentRating = 0;
   final TextEditingController _reviewController = TextEditingController();
+  Doctor? _doctor;
 
-  void _submitReview() {
-    if (_reviewController.text.trim().isNotEmpty) {
+  Future<void> _submitReview() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final patient = userProvider.currentPatient;
+    final reviewText = _reviewController.text.trim();
+    if (patient == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must be logged in as a patient to submit a review.")),
+      );
+      return;
+    }
+    if (reviewText.isEmpty || _currentRating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please provide a rating and review text.")),
+      );
+      return;
+    }
+    try {
+      final reviewData = {
+        'doctorId': widget.doctor.uid,
+        'patientId': patient.uid,
+        'patientName': patient.displayName,
+        'rating': _currentRating,
+        'review': reviewText,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+      // Save review to Firestore (collection: reviews)
+      await FirebaseFirestore.instance.collection('reviews').add(reviewData);
+
+      // Update doctor's rating and review count
+      final reviewsSnapshot = await FirebaseFirestore.instance
+          .collection('reviews')
+          .where('doctorId', isEqualTo: widget.doctor.uid)
+          .get();
+      final reviews = reviewsSnapshot.docs;
+      double avgRating = 0;
+      if (reviews.isNotEmpty) {
+        avgRating = reviews
+            .map((doc) => (doc['rating'] as num).toDouble())
+            .reduce((a, b) => a + b) /
+            reviews.length;
+      }
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.doctor.uid)
+          .update({
+        'rating': avgRating,
+        'reviewCount': reviews.length,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Reload doctor data to update UI
+      final docSnap = await FirebaseFirestore.instance.collection('users').doc(widget.doctor.uid).get();
+      setState(() {
+        _doctor = Doctor.fromFirestore(docSnap);
+        _currentRating = 0;
+      });
+      _reviewController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Review submitted successfully!")),
       );
-      _reviewController.clear();
-      setState(() => _currentRating = 0);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error submitting review: $e")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final doctor = _doctor ?? widget.doctor;
     return Scaffold(
       backgroundColor: AppColors.lightBackground,
       body: Column(
@@ -56,10 +120,36 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.bookmark_border,
-                            color: Colors.white),
-                        onPressed: () {},
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, _) {
+                          final patient = userProvider.currentPatient;
+                          final isFavorite = patient?.favoriteDoctors.contains(doctor.uid) ?? false;
+                          return IconButton(
+                            icon: Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: Colors.white,
+                            ),
+                            tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                            onPressed: patient == null ? null : () async {
+                              final updatedFavorites = List<String>.from(patient.favoriteDoctors);
+                              if (isFavorite) {
+                                updatedFavorites.remove(doctor.uid);
+                              } else {
+                                updatedFavorites.add(doctor.uid);
+                              }
+                              await userProvider.updatePatientProfile(
+                                patient.copyWith(favoriteDoctors: updatedFavorites),
+                              );
+                              // Optionally show feedback
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isFavorite ? 'Removed from favorites' : 'Added to favorites'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -72,15 +162,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 55,
-                    backgroundImage: widget.doctor.profilePicture.isNotEmpty
-                        ? NetworkImage(widget.doctor.profilePicture)
+                    backgroundImage: doctor.profilePicture.isNotEmpty
+                        ? NetworkImage(doctor.profilePicture)
                         : const AssetImage('assets/1.jpg') as ImageProvider,
                     backgroundColor: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  widget.doctor.displayName,
+                  doctor.displayName,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -88,7 +178,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.doctor.specialty,
+                  doctor.specialty,
                   style: TextStyle(
                       color: Colors.white.withOpacity(0.85), fontSize: 16),
                 ),
@@ -98,7 +188,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   children: List.generate(
                     5,
                     (index) => Icon(
-                      index < widget.doctor.rating.round()
+                      index < doctor.rating.round()
                           ? Icons.star
                           : Icons.star_border,
                       color: Colors.amberAccent,
@@ -165,53 +255,60 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   Widget _writeReviewSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Write a Review',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Row(
-          children: List.generate(5, (index) {
-            return IconButton(
-              icon: Icon(
-                _currentRating > index ? Icons.star : Icons.star_border,
-                color: Colors.amber,
-              ),
-              onPressed: () => setState(() => _currentRating = index + 1.0),
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: _reviewController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: "Write your feedback...",
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, _) {
+        final patient = userProvider.currentPatient;
+        final isPatient = patient != null;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Write a Review',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: List.generate(5, (index) {
+                return IconButton(
+                  icon: Icon(
+                    _currentRating > index ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                  ),
+                  onPressed: isPatient ? () => setState(() => _currentRating = index + 1.0) : null,
+                );
+              }),
             ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _submitReview,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reviewController,
+              maxLines: 3,
+              enabled: isPatient,
+              decoration: InputDecoration(
+                hintText: isPatient ? "Write your feedback..." : "Login as a patient to review",
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
-            child: const Text("Submit Review"),
-          ),
-        ),
-      ],
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isPatient ? _submitReview : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text("Submit Review"),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -289,7 +386,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 class _InfoStat extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoStat({required this.label, required this.value, super.key});
+  const _InfoStat({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +407,7 @@ class _InfoStat extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoRow({required this.label, required this.value, super.key});
+  const _InfoRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
