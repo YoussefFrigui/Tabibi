@@ -85,13 +85,13 @@ class WelcomeScreen extends StatelessWidget {
             const SizedBox(height: 30),
             
             // Debug: Database initializer button
-            TextButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.databaseInitializer),
-              child: const Text(
-                'Initialize Database (Debug)',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ),
+            // TextButton(
+            //   onPressed: () => Navigator.pushNamed(context, AppRoutes.databaseInitializer),
+            //   child: const Text(
+            //     'Initialize Database (Debug)',
+            //     style: TextStyle(color: Colors.grey, fontSize: 12),
+            //   ),
+            // ),
           ],
         ),
       ),
